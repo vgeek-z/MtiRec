@@ -251,9 +251,6 @@ class Mti_Recommend():
     
     def test_data_pre(self,test_stat_df):
         """
-        删除测试集中所有的label集中的字段，将测试集中的空格也变为nan类型
-        对于测试集中的每一个用户，随机删除一个属性，在这里要求所有当前特征中删除一个
-        
         Returns
         -----------
         test_stat_df:dataframe,
