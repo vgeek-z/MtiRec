@@ -52,6 +52,25 @@ Input the following code to run the project
 
     python DHTMRec.py
 
+## 3.1 Stepped execution information of the code
+The following step information is already prompted in the code
+
+  Step1: Pack patient's non-null attributes as a document, which is the set of attribute-value pairs (AVPs).
+
+  Step2: Train the topic model, which named DHTM, to explore the connections between AVPs and therapies.
+
+  Step3: Combine therapies in different categories to form therapy tuples.
+
+  Step4: Calculate the connections between patients and therapy tuples by DHTM.
+
+  Step5: Calculate the connections between patients and therapy tuples by their same key AVPs.
+
+  Step6: Combine these two kinds of connections by a weighted fusion.
+
+  Step7: Calculate the accumulated gain of null attribute for patients.
+
+  Step8: Recommend attributes and evaluate the performance of the model on three metrics.
+
 # 4. Expected Running Results
 ## 4.1 Progress Prompt Messages
 Prompts for the completion of dataset processing, Gibbs sampling progress, tuple information, etc.
@@ -64,3 +83,19 @@ Save the evaluation metrics Accuracy and MRR of the test set in the "result_data
 1. Due to privacy protection and other reasons, medical data is not uploaded. You can apply for downloading from the BCDB official website (http://bcdb.mdt.team:8080).
 
 2. DHTMRec.py provides a multi-threading method for model performance evaluation to determine the optimal parameters for custom datasets.
+
+# 6. Symbols in papers
+
+Symbols in papers: Variables in code
+
+$\omega$ ：weight_t1
+
+$\eta$ ： lambda_df
+
+$\chi$：num_PCs
+
+$p'({\Delta | m})$：new_df2
+
+$p(\Delta | m)$ ： new_df1，new_df   
+
+$R_{m,l}$：gain_value

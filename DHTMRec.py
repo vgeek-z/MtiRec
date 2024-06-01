@@ -113,55 +113,7 @@ enum = ["side",
 "clinical_stages",
 "rs_21_gene_side"]
 
-text = [
-"complication",
-"history",
-"checkup",
-"bone_scan",
-"breast_ct",
-"echocardiography",
-"inpatient_exam",
-"other_assist_exam",
-"remarks",
-"liver_sd",
-"abdomen_ultrasound_result",
-"breast_ct_result",
-"gynecology_ultrasound_result",
-"visit_others",
-"head_mri",
-"pet_ct",
-"local_ln",
-"body_remarks",
-"tumor",
-"pre_nac_pe_size",
-"pre_nac_us_size",
-"pre_nac_mri_size",
-"cnb_type_1",
-"cnb_type_2",
-"cnb_level_1",
-"cnb_level_2",
-"cnb_pr_value_1",
-"cnb_pr_value_2",
-"remarks_side",
-"op_breast_mode",
-"size_1",
-"size_2",
-"pathological_type_1",
-"pathological_type_2",
-"er_value_1",
-"er_value_2",
-"pr_value_1",
-"pr_value_2",
-"ki67_value_1",
-"us",
-"mmg",
-"mri",
-"phase_side",
-"pre_nac_us_size_2",
-"pre_nac_mmg_size",
-"breast_xray_result",
-"breast_ultrasound_result"
-]
+text = []
 
 from sklearn import model_selection
 def adjuvant_split(adjuvant):
@@ -382,15 +334,15 @@ print('...划分训练集、测试集结束')
 
 labeled_documents=TrainSetProcess(train_df)
 print('...训练集处理结束')
+print('Step1: Data process (finished)')
 
 #当需要使用已经训练好的模型时，注释掉模型训练的代码
 #并取消以下代码的注释
 #with open('result_data/dhtm_model.pkl', 'rb') as file: 
     #dhtm_model = pickle.load(file)
 dhtm_model=model_instantiation(labeled_documents)  #时间复杂度：M*MN*K
-print('...模型训练结束（已收敛)')
-    
 print('...dhtm_model.iteration:',dhtm_model.iteration)
+print('Step2: Train DHTM (finished)')
 terms=dhtm_model.terms
 df_terms = pd.DataFrame(terms)
 df_terms.to_excel('result_data/terms.xlsx')
@@ -406,19 +358,18 @@ test_temp=test_df
 M = 2 
 print('当前是%d元组'%M)
 therapyGroups,therapygroup2term,therapy_freq=GenerateTherapyGroups(M,0,dhtm_model)
+print('Step3: Form therapy tuples. (finished)')
+
 test_df=test_temp
 test_df=test_df.reset_index(drop=True)
 test_df,del_column=recommend.test_data_pre(test_df)
 labeled_documents2=TestSetProcess(test_df)
-print('开始new_df2矩阵的计算：')
-print('(new_df2)START Time:%s'%time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())) 
 new_df2=TM_infer.get_new_df(test_df,therapygroup2term,dhtm_model,labeled_documents2,M,therapy_freq)
-print('...得到治疗方案组、治疗方案组合-特征词概率表示')
-print('(new_df2)END:%s'%time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())) 
+print('Step4: Calculate the connections between patients and therapy tuples by DHTM (new_df2). (finished)')
 
-# 多线程比较对于当前数据集而言最佳的参数
+# 多线程比较对于当前数据集而言可能最佳的参数
 lambda_df_list=[0.5]  #参数可能的取值列表，该参数取值范围在0~1
-weight_list=[0.2]     #该参数取值范围在 -1~+1
+weight_list=[0.2]     #该参数取值范围在 -1~+1，这是一个惩罚系数
 num_PCs_list=[5]      #该参数取值要求为正整数，过大的主成分集合长度会可能会导致计算资源的浪费
 
 def get_logger(name):
@@ -436,13 +387,18 @@ def get_logger(name):
 def process(lambda_df):
     print('origin:',lambda_df,'inference:',1-lambda_df)
     new_df=lambda_df*new_df1+(1-lambda_df)*new_df2
-            
+    print('Step6: Combine these two kinds of connections by a weighted fusion. (finished)')
+      
     gain_value=recommend.get_gain_value(train_df,test_df,new_df,therapygroup2term,feature_wordsbag)
+    print('当前得到的是患者的属性增益值')
+    print('Step7: Calculate the accumulated gain of null attribute for patients. (finished)')
+
     #gain_value.to_excel('result_data/gain_value_lambda{}_weight{}_bench{}.xlsx'.format(int(lambda_df*100),int(weight_t1*100),num_PCs))
     locals()['Accuracy_lambda{}_weight{}_bench{}'.format(int(lambda_df*100),int(weight_t1*100),num_PCs)]=[]
     Assessment=assessment_model.assessment_criteria(gain_value,del_column)
     acc_list=Assessment.Accuracy_List(10)   
-    mrr_list=Assessment.MRR_List(10)      
+    mrr_list=Assessment.MRR_List(10)    
+    print('Step8: Recommend MTIs and evaluate the performance of the model on three metrics. (finished)')
     locals()['Accuracy_lambda{}_weight{}_bench{}'.format(int(lambda_df*100),int(weight_t1*100),num_PCs)]=acc_list
     locals()['MRR_lambda{}_weight{}_bench{}'.format(int(lambda_df*100),int(weight_t1*100),num_PCs)]=mrr_list
     Accuracy_df=pd.DataFrame(index=[0],columns=range(1,11))
@@ -457,6 +413,7 @@ for num_PCs in num_PCs_list:
     for weight_t1 in weight_list:
         print('当前的权重系数weight_t为：',weight_t1)
         new_df1=recommend.get_new_df(test_df,therapy_topN_terms,weight_t1)
+        print('Step5: Calculate the connections between patients and therapy tuples by their same AVPs. (finished)')
         pool=ThreadPool()
         pool.map(process,lambda_df_list)
         pool.close
